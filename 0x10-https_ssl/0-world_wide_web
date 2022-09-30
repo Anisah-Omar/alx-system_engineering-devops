@@ -1,35 +1,22 @@
 #!/usr/bin/env bash
-# Displays informtation about subdomains.
+# After configuring domain zone, use this script to output where each subdomain points to
+runDig () {
+    subarg=$1
+    urlarg=$2
 
-# uncomment for debugging purposes.
-#set -x
-
-# for the checker to work please remove the colors.
-
-# colors
-blue='\e[1;34m'
-brown='\e[0;33m'
-reset='\033[0m'
-
-# variables & parameters
-subdomains=( "www" "lb-01" "web-01" "web-02" )
-domain="$1"
-sub="$2"
-
-dig_cmd () {
-	# func variables
-	sub="$2"
-	INFO="$(dig "$sub.$domain" | grep -A1 'ANSWER SECTION:' | awk 'NR==2')"
-	IP=$(echo "$INFO" | awk '{print $5}')
-	RECORD=$(echo "$INFO" | awk '{print $4}')
-
-	echo -e "${brown}The subdomain ${blue}$sub${brown} is a ${blue}$RECORD${brown} record and points to ${blue}$IP${reset}"
+    dig "$subarg.$urlarg" | grep -A1 'ANSWER SECTION:' | tail -1 | awk -v s="$subarg" 'BEGIN { FS = " " } ; { print "The subdomain " s " is a " $4 " record and points to " $5 }'
 }
 
+allSubs=( "www" "lb-01" "web-01" "web-02" )
+
 if [ $# -eq 1 ]; then
-	for subs in "${subdomains[@]}"; do
-		dig_cmd "$domain" "$subs"
-	done
+    url="$1"
+    for s in "${allSubs[@]}"
+    do
+	runDig "$s" "$url"
+    done
 elif [ $# -eq 2 ]; then
-	dig_cmd "$domain" "$sub"
+    url="$1"
+    sub="$2"
+    runDig "$sub" "$url"
 fi
